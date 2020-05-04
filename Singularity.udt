@@ -1,0 +1,67 @@
+Bootstrap: docker
+From: ubuntu:18.04
+
+#%environment
+#  export PORT=${PORT:-54321}
+#  export HOST_NAME=${HOST_NAME:-127.0.0.1}
+#  export FILE_NAME=${FILE_NAME:-/etc/group}
+#  export DESTINATION_FOLDER=${DESTINATION_FOLDER:-/tmp/group}
+
+%post
+  apt-get -y update
+  apt install -y git
+  apt-get install -y build-essential
+
+  git clone https://git.code.sf.net/p/udt/git udt-git
+  cd udt-git/udt4/
+  make
+  export LD_LIBRARY_PATH=./src/:$LD_LIBRARY_PATH
+
+%apprun server
+  if [ "$#" -ne 1 ]; then
+    echo "server <port>"
+    exit
+  fi
+
+  export LD_LIBRARY_PATH=/udt-git/udt4/src
+  /udt-git/udt4/app/sendfile $1
+  echo $!
+
+
+%apprun server_silent
+  if [ "$#" -ne 1 ]; then
+    echo "server <port>"
+    exit
+  fi
+
+  export LD_LIBRARY_PATH=/udt-git/udt4/src
+  /udt-git/udt4/app/sendfile $1 > /tmp/output_$1.txt 2>&1 < /dev/null &
+  echo $!
+
+
+
+%apprun client
+  if [ "$#" -ne 5 ]; then
+    echo "client <port> <hostname> <filename> <destination_folder> <destination_file>, Only supply the port number to the script"
+    exit
+  fi
+
+  export LD_LIBRARY_PATH=/udt-git/udt4/src
+  /udt-git/udt4/app/recvfile $2 $1 $3 $4/$5
+
+  return 0
+
+
+%apprun client_silent
+  if [ "$#" -ne 5 ]; then
+    echo "client <port> <hostname> <filename> <destination_folder> <destination_file>, Only supply the port number to the script"
+    exit
+  fi
+
+  export LD_LIBRARY_PATH=/udt-git/udt4/src
+  /udt-git/udt4/app/recvfile $2 $1 $3 $4/$5 > /dev/null 2>&1 < /dev/null &
+
+
+%help
+  This is a container who will open an fdt client and move
+  the given file from the client to the given server.
