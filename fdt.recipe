@@ -1,0 +1,61 @@
+Bootstrap: docker
+From: ubuntu:18.04
+
+#%environment
+#  export PORT=${PORT:-54321}
+#  export HOST_NAME=${HOST_NAME:-127.0.0.1}
+#  export FILE_NAME=${FILE_NAME:-/etc/group}
+#  export DESTINATION_FOLDER=${DESTINATION_FOLDER:-/tmp/group}
+
+%post
+  apt-get -y update
+  apt-get -y install wget
+  apt-get -y install default-jre
+
+  wget http://monalisa.cern.ch/FDT/lib/fdt.jar
+
+
+%apprun server
+  #if [ "$#" -ne 1 ]; then
+  #  echo "server <port>, Only supply the port number to the script"
+  #  exit
+  #fi
+  java -jar /fdt.jar -S -p 0 &
+  echo $!
+
+%apprun server_silent
+  #if [ "$#" -ne 1 ]; then
+  #  echo "server <port>, Only supply the port number to the script"
+  #  exit
+  #fi
+  java -jar /fdt.jar -S -p 0  > /dev/null 2>&1 < /dev/null &
+  echo $!
+
+
+
+%apprun client
+  if [ "$#" -ne 4 ]; then
+    echo "client <port> <hostname> <file_name> <destination_folder>"
+    exit
+  fi
+  java -jar /fdt.jar -p $1 -c $2 $3 -d $4
+
+%apprun client_silent
+  if [ "$#" -ne 4 ]; then
+    echo "client <port> <hostname> <file_name> <destination_folder>"
+    exit
+  fi
+  java -jar /fdt.jar -p $1 -c $2 $3 -d $4 > /dev/null 2>&1 < /dev/null &
+
+
+
+
+%help
+  This is a container who will open an fdt client and move
+  the given file from the client to the given server.
+
+  client app:
+  client <port> <hostname> <file_name> <destination_folder>
+
+  server app:
+    server <port>

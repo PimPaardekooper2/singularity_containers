@@ -1,0 +1,53 @@
+Bootstrap: docker
+From: ubuntu:18.04
+
+%post
+  apt-get -y update
+  apt install -y curl
+
+  curl -LOs https://downloads.globus.org/toolkit/globus-connect-server/globus-connect-server-repo_latest_all.deb
+  dpkg -i globus-connect-server-repo_latest_all.deb
+  apt-get update
+
+  apt install -y globus-proxy-utils
+
+  apt install -y globus-gridftp
+
+  apt install -y globus-gass-copy-progs
+
+%apprun server
+  if [ "$#" -ne 2 ]; then
+    echo "server <port> <data-interface>"
+    exit
+  fi
+
+  globus-gridftp-server -p ${1} -data-interface ${2}
+  echo $!
+
+
+%apprun server_silent
+  if [ "$#" -ne 2 ]; then
+    echo "server <port> <data-interface>"
+    exit
+  fi
+
+  globus-gridftp-server -p ${1} -data-interface ${2} > /dev/null 2>&1 < /dev/null &
+  echo $!
+
+
+%apprun client
+  if [ "$#" -ne 4 ]; then
+    echo "client <file_name> <host_name> <port> <destination_folder>"
+    exit
+  fi
+
+  globus-url-copy ${1} gsiftp://${2}:${3}/${4}
+
+
+%apprun client_silent
+  if [ "$#" -ne 4 ]; then
+    echo "client <file_name> <host_name> <port> <destination_folder>"
+    exit
+  fi
+
+  globus-url-copy ${1} gsiftp://${2}:${3}/${4} > /dev/null 2>&1 < /dev/null &
