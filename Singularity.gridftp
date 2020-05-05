@@ -15,8 +15,6 @@ From: ubuntu:18.04
 
   apt install -y globus-gass-copy-progs
 
-  mkdir /etc/localtime
-
 %apprun server
   if [ "$#" -ne 2 ]; then
     echo "server <port> <data-interface>"
